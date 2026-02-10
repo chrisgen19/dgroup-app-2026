@@ -7,17 +7,22 @@ import {
   MapPin,
   ChevronRight,
   Plus,
+  Bell,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Chip } from '@/components/ui/chip';
+import { JoinRequestCard } from '@/components/features/join-request-card';
 import type { HomeViewProps } from '@/types';
 
 export function HomeView({
   currentUser,
   myGroups,
+  pendingRequests,
   onSelectGroup,
   onNavigate,
+  onApproveRequest,
+  onRejectRequest,
 }: HomeViewProps) {
   return (
     <div className="p-6 pb-24 md:p-10 space-y-6">
@@ -56,6 +61,30 @@ export function HomeView({
         </div>
       </Card>
 
+      {/* Pending Join Requests */}
+      {pendingRequests.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Bell size={18} className="text-indigo-600" />
+            <h2 className="text-lg font-bold text-slate-900">Join Requests</h2>
+            <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">
+              {pendingRequests.length}
+            </span>
+          </div>
+          <div className="space-y-3">
+            {pendingRequests.map((request) => (
+              <JoinRequestCard
+                key={request.id}
+                request={request}
+                onApprove={onApproveRequest}
+                onReject={onRejectRequest}
+                showGroupName
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
         <h2 className="text-lg font-bold text-slate-900 mb-4">My Dgroups</h2>
         <div className="space-y-4">
@@ -93,15 +122,18 @@ export function HomeView({
               </div>
               <div className="bg-slate-50 p-3 px-5 border-t border-slate-100 flex justify-between items-center text-sm">
                 <span className="text-slate-500">
-                  Next Meeting:{' '}
-                  <span className="text-indigo-600 font-medium">
-                    This Friday
-                  </span>
+                  {group.members.length} member{group.members.length !== 1 ? 's' : ''}
                 </span>
                 <ChevronRight size={16} className="text-slate-400" />
               </div>
             </Card>
           ))}
+
+          {myGroups.length === 0 && (
+            <p className="text-center text-slate-400 py-4">
+              You haven&apos;t joined any groups yet.
+            </p>
+          )}
 
           <button
             onClick={() => onNavigate('discover')}

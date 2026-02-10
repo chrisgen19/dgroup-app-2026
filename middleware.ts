@@ -11,6 +11,10 @@ const publicApiRoutes = [
   '/api/auth/signout',
 ]
 
+const publicApiPrefixes = [
+  '/api/groups/invite/',
+]
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -20,6 +24,10 @@ export async function middleware(request: NextRequest) {
   }
 
   if (publicApiRoutes.includes(pathname)) {
+    return NextResponse.next()
+  }
+
+  if (publicApiPrefixes.some((prefix) => pathname.startsWith(prefix) && !pathname.endsWith('/join'))) {
     return NextResponse.next()
   }
 

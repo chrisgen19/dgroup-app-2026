@@ -16,7 +16,11 @@ export type ChipColor = 'slate' | 'indigo' | 'green' | 'orange';
 
 export type LocationType = 'Online' | 'Face to Face' | 'Hybrid';
 
-export type GroupStatus = 'Public' | 'Private';
+export type GroupStatus = 'PUBLIC' | 'PRIVATE';
+
+export type JoinMode = 'AUTO_ACCEPT' | 'REQUEST_TO_JOIN';
+
+export type JoinRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export type LifeStage = 'Single Professional' | 'Single' | 'Married' | 'Parent';
 
@@ -40,6 +44,7 @@ export const LIFE_STAGE_LABELS: Record<string, LifeStage> = {
 
 export interface GroupMember {
   id: string;
+  userId: string;
   name: string;
   role: UserRole;
   avatar: string;
@@ -81,10 +86,27 @@ export interface Group {
   schedule: string;
   location: string;
   type: string;
+  status: GroupStatus;
+  joinMode: JoinMode;
+  inviteCode: string;
+  maxMembers: number;
   members: GroupMember[];
   prayers: PrayerRequest[];
   posts: Post[];
   chat: ChatMessage[];
+}
+
+export interface JoinRequest {
+  id: string;
+  status: JoinRequestStatus;
+  message: string | null;
+  userId: string;
+  userName: string;
+  userAvatar: string | null;
+  userSatellite: string | null;
+  groupId: string;
+  groupName: string;
+  createdAt: string;
 }
 
 // --- Component Props ---
@@ -138,13 +160,17 @@ export interface AuthViewProps {
 export interface HomeViewProps {
   currentUser: User;
   myGroups: Group[];
+  pendingRequests: JoinRequest[];
   onSelectGroup: (group: Group) => void;
   onNavigate: (view: ViewType) => void;
+  onApproveRequest: (requestId: string, groupId: string) => void;
+  onRejectRequest: (requestId: string, groupId: string) => void;
 }
 
 export interface DiscoverViewProps {
   availableGroups: Group[];
-  onJoinGroup: (group: Group) => void;
+  currentUser: User;
+  onJoinGroup: (group: Group) => Promise<{ joined?: boolean; requested?: boolean }>;
   showToast: (message: string) => void;
 }
 
@@ -155,9 +181,17 @@ export interface CreateGroupViewProps {
 
 export interface GroupDetailViewProps {
   group: Group;
+  currentUserId: string;
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
   onBack: () => void;
   onStartMeeting: () => void;
   showToast: (message: string) => void;
+  onRemoveMember: (memberId: string) => void;
+  onUpdateRole: (memberId: string, role: UserRole) => void;
+  onLeaveGroup: () => void;
+  onUpdateSettings: (data: Record<string, unknown>) => Promise<void>;
+  pendingRequests: JoinRequest[];
+  onApproveRequest: (requestId: string) => void;
+  onRejectRequest: (requestId: string) => void;
 }

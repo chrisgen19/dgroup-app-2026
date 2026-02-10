@@ -41,11 +41,28 @@ app/
 ├── globals.css             # Global styles + Tailwind config
 ├── signup/
 │   └── page.tsx            # Signup form
-└── api/auth/
-    ├── signup/route.ts     # POST: register new user
-    ├── signin/route.ts     # POST: authenticate user
-    ├── me/route.ts         # GET: current session user
-    └── signout/route.ts    # POST: clear session
+├── join/
+│   └── [code]/page.tsx     # Invite link landing page
+└── api/
+    ├── auth/
+    │   ├── signup/route.ts     # POST: register new user
+    │   ├── signin/route.ts     # POST: authenticate user
+    │   ├── me/route.ts         # GET: current session user
+    │   └── signout/route.ts    # POST: clear session
+    └── groups/
+        ├── route.ts            # POST: create group, GET: list groups
+        ├── my-requests/route.ts # GET: pending requests for groups I lead
+        ├── [id]/
+        │   ├── route.ts        # GET: group detail, PATCH: update settings
+        │   ├── join/route.ts   # POST: join or request to join
+        │   ├── leave/route.ts  # DELETE: leave group
+        │   ├── members/[memberId]/route.ts   # DELETE: remove, PATCH: role
+        │   └── join-requests/
+        │       ├── route.ts              # GET: pending requests
+        │       └── [requestId]/route.ts  # PATCH: approve/reject
+        └── invite/[code]/
+            ├── route.ts        # GET: invite preview (public)
+            └── join/route.ts   # POST: join via invite link
 components/
 ├── ui/                     # Reusable UI primitives
 │   ├── button.tsx
@@ -54,7 +71,11 @@ components/
 │   ├── chip.tsx
 │   └── toast.tsx
 ├── features/               # Feature-specific components
-│   └── meeting-assistant.tsx   # 4Ws Meeting Mode
+│   ├── meeting-assistant.tsx      # 4Ws Meeting Mode
+│   ├── invite-qr-modal.tsx        # QR code + copy invite link modal
+│   ├── group-settings-panel.tsx   # Edit group settings (Leader only)
+│   ├── member-actions-menu.tsx    # Promote/demote/remove dropdown
+│   └── join-request-card.tsx      # Approve/reject request card
 ├── layout/                 # Layout components
 │   └── nav-bar.tsx
 └── views/                  # Page-level views
@@ -65,17 +86,24 @@ components/
     └── group-detail-view.tsx
 lib/
 ├── auth.ts                 # JWT sign/verify + cookie helpers
+├── api-auth.ts             # Shared API auth helper (getAuthenticatedUser)
 ├── db.ts                   # Prisma client singleton
-├── mock-data.ts            # Mock data (to be replaced with real API)
+├── invite-code.ts          # nanoid-based invite code generator
+├── mappers.ts              # API response → frontend type mappers
+├── mock-data.ts            # Mock data (Phase 4: chat, posts, prayers)
 ├── hooks/
-│   └── use-auth.ts         # useAuth() hook
+│   ├── use-auth.ts              # useAuth() hook
+│   ├── use-groups.ts            # useGroups() — CRUD, join/leave
+│   ├── use-group-management.ts  # Leader tools per group
+│   └── use-join-requests.ts     # Dashboard pending requests
 └── validations/
-    └── auth.ts             # Zod schemas (signin, signup)
+    ├── auth.ts              # Zod schemas (signin, signup)
+    └── group.ts             # Zod schemas (createGroup, updateGroup, etc.)
 prisma/
-└── schema.prisma           # Database schema
+└── schema.prisma           # Database schema (User, Group, GroupMember, JoinRequest)
 types/
 └── index.ts                # TypeScript definitions & interfaces
-middleware.ts               # API route protection
+middleware.ts               # API route protection (+ public invite routes)
 ```
 
 ## User Roles
@@ -115,14 +143,19 @@ middleware.ts               # API route protection
 - [x] Protected API routes & session management (middleware)
 
 ### Phase 3: Group Management
-- [ ] Create Dgroup (persist to database)
-- [ ] Join/Leave group functionality
-- [ ] Invite logic with dynamic links (e.g., `dgroup.app/join/xc9-22a`)
-- [ ] Approval mode toggle: "Auto-accept via link" vs "Request to Join"
-- [ ] QR code generation for invite links
-- [ ] Leader tools: remove members, edit group settings
-- [ ] Promote member to Apprentice (co-leader)
-- [ ] Split Group feature (multiply/clone group for new leader)
+- [x] Database schema: Group, GroupMember, JoinRequest models with enums
+- [x] Create Dgroup (persist to database with invite code generation)
+- [x] Join/Leave group functionality (with last-leader protection)
+- [x] Invite logic with dynamic links (`/join/[code]` landing page)
+- [x] Approval mode toggle: "Auto Accept" vs "Request to Join"
+- [x] QR code generation for invite links (qrcode + nanoid)
+- [x] Leader tools: remove members, edit group settings
+- [x] Promote/demote members (Member, Apprentice, Leader)
+- [x] Join request approval/rejection (Leader + Apprentice)
+- [x] Dashboard pending requests across all led groups
+- [x] Discover view with satellite-based sorting, search, and filters
+- [x] Public/Private group visibility
+- [ ] Split Group feature (deferred to later phase)
 
 ### Phase 4: Communication & Content
 - [ ] Real-time group chat (Socket.io or Pusher)

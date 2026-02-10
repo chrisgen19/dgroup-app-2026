@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import {
   ArrowLeft,
   Share2,
@@ -11,38 +11,58 @@ import {
   Hand,
   Plus,
   Send,
-  MoreVertical,
   Users,
+  LogOut,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Chip } from '@/components/ui/chip';
-import type { GroupDetailViewProps, TabType } from '@/types';
+import { InviteQrModal } from '@/components/features/invite-qr-modal';
+import { GroupSettingsPanel } from '@/components/features/group-settings-panel';
+import { MemberActionsMenu } from '@/components/features/member-actions-menu';
+import { JoinRequestCard } from '@/components/features/join-request-card';
+import type { GroupDetailViewProps, TabType, UserRole } from '@/types';
 
 interface TabItem {
   id: TabType;
   label: string;
+  badge?: number;
 }
 
-const TABS: TabItem[] = [
-  { id: 'feed', label: 'Feed' },
-  { id: 'chat', label: 'Chat' },
-  { id: 'prayer', label: 'Prayer Wall' },
-  { id: 'members', label: 'People' },
-];
-
-const CURRENT_USER_ID = 'u1';
+const CURRENT_USER_ID_FALLBACK = 'u1';
 
 export function GroupDetailView({
   group,
+  currentUserId,
   activeTab,
   onTabChange,
   onBack,
   onStartMeeting,
   showToast,
+  onRemoveMember,
+  onUpdateRole,
+  onLeaveGroup,
+  onUpdateSettings,
+  pendingRequests,
+  onApproveRequest,
+  onRejectRequest,
 }: GroupDetailViewProps) {
   const chatRef = useRef<HTMLDivElement>(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const userId = currentUserId || CURRENT_USER_ID_FALLBACK;
+  const currentMember = group.members.find((m) => m.userId === userId);
+  const currentUserRole: UserRole = currentMember?.role ?? 'Member';
+  const isLeader = currentUserRole === 'Leader';
+
+  const TABS: TabItem[] = [
+    { id: 'feed', label: 'Feed' },
+    { id: 'chat', label: 'Chat' },
+    { id: 'prayer', label: 'Prayer Wall' },
+    { id: 'members', label: 'People', badge: pendingRequests.length || undefined },
+  ];
 
   useEffect(() => {
     if (activeTab === 'chat' && chatRef.current) {
@@ -50,8 +70,35 @@ export function GroupDetailView({
     }
   }, [activeTab]);
 
+  const handleRemoveMember = (memberId: string) => {
+    onRemoveMember(memberId);
+    showToast('Member removed');
+  };
+
+  const handleUpdateRole = (memberId: string, role: UserRole) => {
+    onUpdateRole(memberId, role);
+    showToast(`Role updated to ${role}`);
+  };
+
   return (
     <div className="h-screen flex flex-col bg-slate-50 relative">
+      {/* Modals */}
+      {showInviteModal && (
+        <InviteQrModal
+          inviteCode={group.inviteCode}
+          groupName={group.name}
+          onClose={() => setShowInviteModal(false)}
+        />
+      )}
+      {showSettings && isLeader && (
+        <GroupSettingsPanel
+          group={group}
+          onClose={() => setShowSettings(false)}
+          onSave={onUpdateSettings}
+          showToast={showToast}
+        />
+      )}
+
       {/* Sticky Header */}
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
         <div className="flex items-center gap-3">
@@ -72,16 +119,19 @@ export function GroupDetailView({
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => {
-              showToast('Invite link copied!');
-            }}
+            onClick={() => setShowInviteModal(true)}
             className="p-2 bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-colors"
           >
             <Share2 size={20} />
           </button>
-          <button className="p-2 text-slate-400 hover:bg-slate-50 rounded-full">
-            <Settings size={20} />
-          </button>
+          {isLeader && (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 text-slate-400 hover:bg-slate-50 rounded-full"
+            >
+              <Settings size={20} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -91,13 +141,18 @@ export function GroupDetailView({
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap relative ${
               activeTab === tab.id
                 ? 'border-indigo-600 text-indigo-600'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
             {tab.label}
+            {tab.badge && tab.badge > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {tab.badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -167,7 +222,7 @@ export function GroupDetailView({
                 Today
               </div>
               {group.chat.map((msg) => {
-                const isMe = msg.userId === CURRENT_USER_ID;
+                const isMe = msg.userId === userId;
                 return (
                   <div
                     key={msg.id}
@@ -261,6 +316,25 @@ export function GroupDetailView({
         {/* MEMBERS TAB */}
         {activeTab === 'members' && (
           <div className="p-4">
+            {/* Pending Join Requests (Leader/Apprentice only) */}
+            {pendingRequests.length > 0 && (isLeader || currentUserRole === 'Apprentice') && (
+              <div className="mb-6">
+                <h3 className="text-sm font-bold text-slate-700 mb-3">
+                  Pending Requests ({pendingRequests.length})
+                </h3>
+                <div className="space-y-3">
+                  {pendingRequests.map((request) => (
+                    <JoinRequestCard
+                      key={request.id}
+                      request={request}
+                      onApprove={(reqId) => onApproveRequest(reqId)}
+                      onReject={(reqId) => onRejectRequest(reqId)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-50">
               {group.members.map((member) => (
                 <div
@@ -272,6 +346,9 @@ export function GroupDetailView({
                     <div>
                       <p className="font-bold text-slate-900 text-sm">
                         {member.name}
+                        {member.userId === userId && (
+                          <span className="text-slate-400 font-normal ml-1">(You)</span>
+                        )}
                       </p>
                       <p className="text-xs text-slate-500">{member.role}</p>
                     </div>
@@ -281,21 +358,40 @@ export function GroupDetailView({
                       <Users size={16} />
                     </div>
                   )}
-                  {member.role !== 'Leader' && (
-                    <button className="text-slate-300 hover:text-slate-600">
-                      <MoreVertical size={16} />
-                    </button>
+                  {member.userId !== userId && (isLeader || currentUserRole === 'Apprentice') && (
+                    <MemberActionsMenu
+                      member={member}
+                      currentUserRole={currentUserRole}
+                      onUpdateRole={handleUpdateRole}
+                      onRemoveMember={handleRemoveMember}
+                    />
                   )}
                 </div>
               ))}
             </div>
-            <div className="mt-6 text-center">
-              <p className="text-slate-400 text-sm mb-2">
+
+            <div className="mt-6 space-y-3">
+              <p className="text-slate-400 text-sm text-center">
                 Invite others to join
               </p>
-              <Button variant="outline" className="w-full" icon={Share2}>
+              <Button
+                variant="outline"
+                className="w-full"
+                icon={Share2}
+                onClick={() => setShowInviteModal(true)}
+              >
                 Share Invite Link
               </Button>
+              {currentMember && !isLeader && (
+                <Button
+                  variant="danger"
+                  className="w-full"
+                  icon={LogOut}
+                  onClick={onLeaveGroup}
+                >
+                  Leave Group
+                </Button>
+              )}
             </div>
           </div>
         )}

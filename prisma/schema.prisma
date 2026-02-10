@@ -24,7 +24,61 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  memberships  GroupMember[]
+  joinRequests JoinRequest[]
+
   @@map("users")
+}
+
+model Group {
+  id          String          @id @default(cuid())
+  name        String
+  description String
+  schedule    String
+  location    String
+  type        String
+  status      GroupVisibility @default(PUBLIC)
+  joinMode    JoinMode        @default(AUTO_ACCEPT) @map("join_mode")
+  inviteCode  String          @unique @map("invite_code")
+  satellite   String?
+  maxMembers  Int             @default(12) @map("max_members")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  members      GroupMember[]
+  joinRequests JoinRequest[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String     @id @default(cuid())
+  role     MemberRole @default(MEMBER)
+  joinedAt DateTime   @default(now()) @map("joined_at")
+  userId   String     @map("user_id")
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId  String     @map("group_id")
+  group    Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@unique([userId, groupId])
+  @@map("group_members")
+}
+
+model JoinRequest {
+  id       String            @id @default(cuid())
+  status   JoinRequestStatus @default(PENDING)
+  message  String?
+  userId   String            @map("user_id")
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId  String            @map("group_id")
+  group    Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  @@unique([userId, groupId])
+  @@map("join_requests")
 }
 
 enum Gender {
@@ -37,4 +91,26 @@ enum LifeStage {
   SINGLE_PROFESSIONAL
   MARRIED
   PARENT
+}
+
+enum MemberRole {
+  LEADER
+  APPRENTICE
+  MEMBER
+}
+
+enum JoinMode {
+  AUTO_ACCEPT
+  REQUEST_TO_JOIN
+}
+
+enum GroupVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
