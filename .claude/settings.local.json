@@ -6,7 +6,12 @@
       "Bash(bun run lint:*)",
       "Bash(bun pm ls:*)",
       "Bash(bun run:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(bun install:*)",
+      "Bash(bunx prisma generate:*)",
+      "WebSearch",
+      "WebFetch(domain:www.prisma.io)",
+      "Bash(bunx prisma db push:*)"
     ]
   }
 }

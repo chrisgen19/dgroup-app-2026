@@ -25,11 +25,18 @@ export type LifeStage = 'Single Professional' | 'Single' | 'Married' | 'Parent';
 export interface User {
   id: string;
   name: string;
-  avatar: string;
+  avatar: string | null;
   email: string;
   lifeStage: LifeStage;
   satellite: string;
 }
+
+export const LIFE_STAGE_LABELS: Record<string, LifeStage> = {
+  SINGLE: 'Single',
+  SINGLE_PROFESSIONAL: 'Single Professional',
+  MARRIED: 'Married',
+  PARENT: 'Parent',
+};
 
 export interface GroupMember {
   id: string;
@@ -125,7 +132,7 @@ export interface NavBarProps {
 }
 
 export interface AuthViewProps {
-  onSignIn: () => void;
+  onSignIn: (user: User) => void;
 }
 
 export interface HomeViewProps {

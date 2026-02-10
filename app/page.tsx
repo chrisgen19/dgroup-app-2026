@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { ViewType, TabType, Group } from '@/types';
-import { CURRENT_USER, MOCK_GROUPS } from '@/lib/mock-data';
+import type { ViewType, TabType, Group, User } from '@/types';
+import { MOCK_GROUPS } from '@/lib/mock-data';
+import { useAuth } from '@/lib/hooks/use-auth';
 import { Toast } from '@/components/ui/toast';
 import { MeetingAssistant } from '@/components/features/meeting-assistant';
 import { NavBar } from '@/components/layout/nav-bar';
@@ -11,9 +12,11 @@ import { HomeView } from '@/components/views/home-view';
 import { DiscoverView } from '@/components/views/discover-view';
 import { CreateGroupView } from '@/components/views/create-group-view';
 import { GroupDetailView } from '@/components/views/group-detail-view';
+import { Loader2 } from 'lucide-react';
 
 export default function DgroupApp() {
-  const [view, setView] = useState<ViewType>('auth');
+  const { user, isLoading, setUser, signOut } = useAuth();
+  const [view, setView] = useState<ViewType>('home');
   const [activeTab, setActiveTab] = useState<TabType>('feed');
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [myGroups, setMyGroups] = useState<Group[]>([MOCK_GROUPS[0]]);
@@ -35,13 +38,33 @@ export default function DgroupApp() {
     setMyGroups((prev) => [...prev, group]);
   }, []);
 
+  const handleSignIn = useCallback(
+    (signedInUser: User) => {
+      setUser(signedInUser);
+    },
+    [setUser]
+  );
+
+  const handleLogout = useCallback(async () => {
+    await signOut();
+  }, [signOut]);
+
   const availableGroups = MOCK_GROUPS.filter(
     (g) => !myGroups.find((mg) => mg.id === g.id)
   );
 
+  // Loading spinner while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 size={32} className="animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
   // Auth view renders without nav
-  if (view === 'auth') {
-    return <AuthView onSignIn={() => setView('home')} />;
+  if (!user) {
+    return <AuthView onSignIn={handleSignIn} />;
   }
 
   return (
@@ -61,16 +84,16 @@ export default function DgroupApp() {
       <div className="flex w-full h-full bg-white overflow-hidden">
         <NavBar
           view={view}
-          currentUser={CURRENT_USER}
+          currentUser={user}
           onNavigate={setView}
-          onLogout={() => setView('auth')}
+          onLogout={handleLogout}
         />
 
         <main className="flex-1 overflow-y-auto relative bg-slate-50">
           <div className="max-w-4xl">
           {view === 'home' && (
             <HomeView
-              currentUser={CURRENT_USER}
+              currentUser={user}
               myGroups={myGroups}
               onSelectGroup={handleSelectGroup}
               onNavigate={setView}

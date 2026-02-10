@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  gender    Gender
+  lifeStage LifeStage @map("life_stage")
+  church    String
+  satellite String?
+  country   String
+  avatar    String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum LifeStage {
+  SINGLE
+  SINGLE_PROFESSIONAL
+  MARRIED
+  PARENT
+}

@@ -9,6 +9,9 @@ A discipleship group management app built for CCF (Christ's Commission Fellowshi
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS 4
 - **Icons:** Lucide React
+- **Database:** PostgreSQL + Prisma ORM 7
+- **Auth:** Custom credentials (bcryptjs + jose JWT + HttpOnly cookies)
+- **Validation:** Zod + React Hook Form
 
 ## Getting Started
 
@@ -34,8 +37,15 @@ bun run lint
 ```
 app/
 ├── layout.tsx              # Root layout
-├── page.tsx                # App shell (state management + routing)
-└── globals.css             # Global styles + Tailwind config
+├── page.tsx                # App shell (auth + state management + routing)
+├── globals.css             # Global styles + Tailwind config
+├── signup/
+│   └── page.tsx            # Signup form
+└── api/auth/
+    ├── signup/route.ts     # POST: register new user
+    ├── signin/route.ts     # POST: authenticate user
+    ├── me/route.ts         # GET: current session user
+    └── signout/route.ts    # POST: clear session
 components/
 ├── ui/                     # Reusable UI primitives
 │   ├── button.tsx
@@ -53,10 +63,19 @@ components/
     ├── discover-view.tsx
     ├── create-group-view.tsx
     └── group-detail-view.tsx
+lib/
+├── auth.ts                 # JWT sign/verify + cookie helpers
+├── db.ts                   # Prisma client singleton
+├── mock-data.ts            # Mock data (to be replaced with real API)
+├── hooks/
+│   └── use-auth.ts         # useAuth() hook
+└── validations/
+    └── auth.ts             # Zod schemas (signin, signup)
+prisma/
+└── schema.prisma           # Database schema
 types/
 └── index.ts                # TypeScript definitions & interfaces
-lib/
-└── mock-data.ts            # Mock data (to be replaced with real API)
+middleware.ts               # API route protection
 ```
 
 ## User Roles
@@ -72,7 +91,7 @@ lib/
 
 ## Development Roadmap
 
-### Phase 1: Foundation (Current)
+### Phase 1: Foundation
 - [x] Project setup (Next.js + Bun + TypeScript + Tailwind)
 - [x] TypeScript type definitions and interfaces
 - [x] UI component library (Button, Card, Avatar, Chip, Toast)
@@ -87,13 +106,13 @@ lib/
 - [x] Mock data for development
 
 ### Phase 2: Authentication & Database
-- [ ] Set up PostgreSQL database (Supabase or Neon)
-- [ ] Database schema: Users, Groups, Group_Members, Posts, Meetings
-- [ ] Authentication with Clerk or NextAuth (Google/Social login)
-- [ ] User registration & profile setup
-- [ ] Satellite selection (CCF Main, Alabang, Eastwood, etc.)
-- [ ] Life stage selection (Single, Married, Parent)
-- [ ] Protected routes & session management
+- [x] Set up PostgreSQL database with Prisma ORM (v7)
+- [x] Database schema: User model with enums (Gender, LifeStage)
+- [x] Custom credential authentication (email/password) with JWT (jose) + HttpOnly cookies
+- [x] User registration & profile setup (signup form with Zod validation)
+- [x] Satellite selection (CCF Main, Alabang, Eastwood, etc.)
+- [x] Life stage selection (Single, Single Professional, Married, Parent)
+- [x] Protected API routes & session management (middleware)
 
 ### Phase 3: Group Management
 - [ ] Create Dgroup (persist to database)
