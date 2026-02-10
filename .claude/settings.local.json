@@ -11,7 +11,8 @@
       "Bash(bunx prisma generate:*)",
       "WebSearch",
       "WebFetch(domain:www.prisma.io)",
-      "Bash(bunx prisma db push:*)"
+      "Bash(bunx prisma db push:*)",
+      "Bash(curl:*)"
     ]
   }
 }
